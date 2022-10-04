@@ -42,12 +42,12 @@ routes:
   post "/game":
     var game = request.body.fromJson(Game)
     setCookie("game", game.toJson(), path="/")
-    redirect "/game"
+    redirect "./game"
   post "/game/rounds":
     var game = request.cookies["game"].fromJson(Game)
     game.rounds.add(request.body.fromJson(Round))
     setCookie("game", game.toJson(), path="/")
-    redirect "/game"
+    redirect "./game"
   get "/game":
     let game = request.cookies["game"].fromJson(Game)
     var results = initTable[string, seq[int]]()

@@ -29,7 +29,7 @@
       <option>{{player}}</option>
     {% endfor %}
   {% endmacro %}
-  <form action="/game/rounds" method="post">
+  <form action="./game/rounds" method="post">
     <h4>Round {{game.rounds.len + 1}}</h4>
     <label>Bidder</label>
     <select name="bidder">{{playerOptions()}}</select>
