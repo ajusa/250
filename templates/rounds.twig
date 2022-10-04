@@ -1,0 +1,77 @@
+{% for (i, round) in game.rounds.pairs() %}
+  <details>
+    <summary>Round {{i + 1}}</summary>
+    <dl>
+      <dt>Bidder</dt>
+      <dd>{{round.bidder}}</dd>
+      <dt>Points wagered</dt>
+      <dd>{{round.points}}</dd>
+      <dt>Partner(s)</dt>
+      <dd>{{round.partner1}}</dd>
+      <dd>{{round.partner2}}</dd>
+
+      <dt>Did they win?</dt>
+      <dd>
+        {% if round.bidderWon.isSome %}
+          Yes
+        {% else %}
+          No
+        {% endif %}
+      </dd>
+    </dl>
+  </details>
+
+{% endfor %}
+
+<article>
+  {% macro playerOptions(): string = %}
+    {% for player in game.players %}
+      <option>{{player}}</option>
+    {% endfor %}
+  {% endmacro %}
+  <form action="/game/rounds" method="post">
+    <h4>Round {{game.rounds.len + 1}}</h4>
+    <label>Bidder</label>
+    <select name="bidder">{{playerOptions()}}</select>
+    <label>Points</label>
+    <input type="number" name="points" value="120" step="5" min="120" max="250">
+    <label>Partner 1</label>
+    <select name="partner1">{{playerOptions()}}</select>
+    <label>Partner 2</label>
+    <select name="partner2">
+      <option></option>
+      {{playerOptions()}}
+    </select>
+    <label>
+      <input type="checkbox" name="bidderWon"> Did the bidder win?
+    </label>
+    <button type="submit">Save round</button>
+  </form>
+</article>
+
+<h4>Results</h4>
+<table role="grid">
+  <thead>
+    <tr>
+      <th>Round</th>
+      {% for player in game.players %}
+        <th>{{player}}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% var prev = initTable[string, int]() %}
+    {% for (i, round) in game.rounds.pairs %}
+      <tr>
+        <td>{{i + 1}}</td>
+        {% for player in game.players %}
+          <td>
+            {{results[player][i]}}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="/" role="button" class="secondary">Start a new game</a>
