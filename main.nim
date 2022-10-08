@@ -4,7 +4,6 @@ proc parseHook*(s: string, i: var int, v: var int) =
   try:
     var str: string
     parseHook(s, i, str)
-    echo str
     v = str.parseInt()
   except:
     jsony.parseHook(s, i, v)
