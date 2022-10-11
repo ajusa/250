@@ -1,4 +1,4 @@
-import jester, nimja, os, jsony, tables, sequtils, strutils, options
+import jester, nimja, os, jsony, tables, sequtils, strutils, options, math
 
 proc parseHook*(s: string, i: var int, v: var int) =
   try:
@@ -7,8 +7,6 @@ proc parseHook*(s: string, i: var int, v: var int) =
     v = str.parseInt()
   except:
     jsony.parseHook(s, i, v)
-
-const templates = getScriptDir() / "templates"
 
 type
   Players = array[5, string]
@@ -22,18 +20,16 @@ type
     players: Players
     rounds: seq[Round]
 
-proc pointsWon(round: Round, player: string): int =
-  if player == round.bidder: 
-    if round.bidderWon.isSome:
-      result = round.points * 2
-    else:
-      result = -1 * round.points
-  elif player == round.partner1 or player == round.partner2:
-    if round.bidderWon.isSome:
-      result = round.points
+proc partner(p: string, r: Round): bool = p == r.partner1 or p == r.partner2
+proc pointsWon(player: string, round: Round): int =
+  if round.bidder == player:
+    return (if round.bidderWon.isSome: round.points * 2 else: round.points * -1)
+  elif player.partner(round):
+    return (if round.bidderWon.isSome: round.points else: 0)
+  return (if round.bidderWon.isSome: 0 else: round.points)
 
-proc html(content: string): string =
-  tmplf(templates / "index.twig")
+const templates = getScriptDir() / "templates"
+proc html(content: string): string = tmplf(templates / "index.twig")
 
 routes:
   get "/":
@@ -49,11 +45,4 @@ routes:
     redirect "../game"
   get "/game":
     let game = request.cookies["game"].fromJson(Game)
-    var results = initTable[string, seq[int]]()
-    for player in game.players:
-      results[player] = @[]
-      var sum = 0
-      for round in game.rounds:
-        sum += round.pointsWon(player)
-        results[player].add(sum)
     resp html tmplf(templates / "rounds.twig")

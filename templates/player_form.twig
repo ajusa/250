@@ -1,3 +1,8 @@
+{% if "game" in request.cookies %}
+  <p>
+    <a href="./game" role="button" class="secondary">Resume last game</a>
+  </p>
+{% endif %}
 <form action="./game" method="post">
   {% for i in 1..5 %}
     <label>Player {{i}}</label>
