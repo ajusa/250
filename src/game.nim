@@ -1,4 +1,4 @@
-import jsony
+import flatty, std/base64, supersnappy
 type
   Round* = object
     bidder*: string
@@ -28,5 +28,5 @@ proc update*(game: var Game, i: int, round: Round) =
 proc delete*(game: var Game, i: int) = 
   game.rounds.delete(i)
 
-proc save*(game: Game): string = game.toJson()
-proc load*(save: string): Game = save.fromJson(Game)
+proc save*(game: Game): string = game.toFlatty().compress.encode
+proc load*(save: string): Game = save.decode.uncompress.fromFlatty(Game)

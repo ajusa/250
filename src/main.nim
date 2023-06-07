@@ -1,6 +1,6 @@
 import std/[strformat, sequtils, cookies, math]
 import mummy, mummy/routers, webby, dekao, dekao/htmx
-import game, mummy_utils, views/[game, round]
+import game, mummy_utils, paths, views/[game, round]
 
 template mainContent(inner): string =
   let content = render:
@@ -51,27 +51,27 @@ proc render(page: IndexPage) =
         ttype "submit"
         say "Start game"
 
-router.get("/") do (req: Request):
+router.get(paths.index) do (req: Request):
   let resp = mainContent: req.initIndexPage.render()
   req.respond(200, body = resp)
 
-router.post("/game") do (req: Request):
+router.post(paths.game) do (req: Request):
   var game: Game
   let form = req.body.parseSearch.initGameForm()
   game.players = form.players.mapIt(it.value)
   var headers: HttpHeaders
   headers["Set-Cookie"] = game.cookie()
-  headers["Location"] = "/game"
+  headers["Location"] = paths.game
   req.respond(303, headers)
 
-router.get("/game") do (req: Request):
+router.get(paths.game) do (req: Request):
   if "game" notin req.cookies:
-    req.redirect("./")
+    req.redirect(paths.index)
   else:
     var game = req.cookies["game"].load()
     let resp = mainContent:
       form:
-        hxPost "./game/rounds"
+        hxPost paths.round
         initRoundForm(game, req.query).render()
         button:
           ttype: "submit"
@@ -88,7 +88,7 @@ router.get("/game") do (req: Request):
           for i, round in game.rounds:
             tr:
               td: a:
-                href &"game/rounds?id={i}"
+                href &"{paths.round}?id={i}"
                 say &"Round {i + 1}"
               for player in game.players:
                 td: say $round.pointsWon(player)
@@ -97,7 +97,7 @@ router.get("/game") do (req: Request):
             for player in game.players:
               td: say $game.rounds.mapIt(it.pointsWon(player)).sum
       a ".secondary":
-        href "./game"
+        href paths.game
         role "button"
         say "Start a new game"
     req.respond(200, body = resp)
@@ -108,11 +108,12 @@ proc toRound(roundForm: RoundForm): Round =
   result.bidderWon = roundForm.bidderWon
   result.wager = roundForm.wager
 
-router.get("/game/rounds") do (req: Request):
+router.get(paths.round) do (req: Request):
   var game = req.cookies["game"].load()
   var id = req.query["id"].parseInt
   var round = game.rounds[id]
   let resp = mainContent:
+    h3: say "Edit round"
     form:
       hxPut &"./rounds?id={id}"
       var roundForm = RoundForm(game: game,
@@ -126,36 +127,36 @@ router.get("/game/rounds") do (req: Request):
         ttype: "submit"
         say "Edit round"
     button ".secondary":
-      hxDelete &"./rounds?id={id}"
+      hxDelete &"{paths.round}?id={id}"
       say "Delete round"
   req.respond(200, body = resp)
 
-router.delete("/game/rounds") do (req: Request):
+router.delete(paths.round) do (req: Request):
   var game = req.cookies["game"].load()
   var id = req.query["id"].parseInt
   game.delete(id)
   var headers: HttpHeaders
   headers["Set-Cookie"] = game.cookie()
-  headers["Location"] = "/game"
+  headers["Location"] = paths.game
   req.respond(303, headers)
 
-router.put("/game/rounds") do (req: Request):
+router.put(paths.round) do (req: Request):
   var game = req.cookies["game"].load()
   var id = req.query["id"].parseInt
   var round = game.initRoundForm(req.body.parseSearch).toRound()
   game.update(id, round)
   var headers: HttpHeaders
   headers["Set-Cookie"] = game.cookie()
-  headers["Location"] = "/game"
+  headers["Location"] = paths.game
   req.respond(303, headers)
 
-router.post("/game/rounds") do (req: Request):
+router.post(paths.round) do (req: Request):
   var game = req.cookies["game"].load()
   let roundForm = game.initRoundForm(req.body.parseSearch)
   game.add(roundForm.toRound())
   var headers: HttpHeaders
   headers["Set-Cookie"] = game.cookie()
-  headers["Location"] = "/game"
+  headers["Location"] = paths.game
   req.respond(303, headers)
 
 let server = newServer(router)
