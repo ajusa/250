@@ -5,6 +5,8 @@ import game, mummy_utils, paths, views/[game, round]
 type GameHandler = proc(request: Request, game: var Game) {.gcsafe.}
 type RoundHandler = proc(request: Request, game: var Game, id: int) {.gcsafe.}
 
+const HTML_HEADERS = @[("Content-Type", "text/html;charset=utf-8")]
+
 proc toHandler(wrapped: GameHandler): RequestHandler =
   return proc(req: Request) =
     if "game" notin req.cookies:
@@ -71,7 +73,7 @@ proc updateGameAndRedirect(req: Request, game: Game) =
 
 proc indexHandler(req: Request) =
   let resp = mainContent: req.initIndexPage.render()
-  req.respond(200, body = resp)
+  req.respond(200, HTML_HEADERS, resp)
 
 proc createGameHandler(req: Request) =
   var game: Game
@@ -81,7 +83,7 @@ proc createGameHandler(req: Request) =
 
 proc viewGameHandler(req: Request, game: var Game) =
   let resp = mainContent: GameDetails(game: game, query: req.query).render()
-  req.respond(200, body = resp)
+  req.respond(200, HTML_HEADERS, resp)
 
 proc editRoundHandler(req: Request, game: var Game, id: int) =
   let round = game.rounds[id]
@@ -102,7 +104,7 @@ proc editRoundHandler(req: Request, game: var Game, id: int) =
     button ".secondary":
       hxDelete &"{paths.round}?id={id}"
       say "Delete round"
-  req.respond(200, body = resp)
+  req.respond(200, HTML_HEADERS, resp)
 
 proc deleteRoundHandler(req: Request, game: var Game, id: int) =
   game.delete(id)
@@ -126,8 +128,6 @@ router.delete(paths.round.route, deleteRoundHandler.toHandler())
 router.put(paths.round.route, updateRoundHandler.toHandler())
 router.post(paths.round.route, createRoundHandler.toHandler())
 
-let port = (try: paramStr(1) except: "8080").parseInt().Port
-# BASE = (try: paramStr(2) except: "").parseInt().Port
 let server = newServer(router)
-echo &"Serving on http://localhost:{port.uint16}"
-server.serve(port)
+echo &"Serving on http://localhost:8080"
+server.serve(Port(8080))
