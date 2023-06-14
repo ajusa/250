@@ -58,12 +58,12 @@ proc render(page: IndexPage) =
       href paths.game
       role "button"
       say "Resume last game"
-    form:
-      hxPost paths.game
-      page.gameForm.render()
-      button:
-        ttype "submit"
-        say "Start game"
+  form:
+    hxPost paths.game
+    page.gameForm.render()
+    button:
+      ttype "submit"
+      say "Start game"
 
 proc updateGameAndRedirect(req: Request, game: Game) =
   var headers: HttpHeaders
