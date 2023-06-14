@@ -1,6 +1,21 @@
-import std/[strformat, sequtils, cookies, math]
+import std/[strformat, sequtils, cookies, math, os]
 import mummy, mummy/routers, webby, dekao, dekao/htmx
 import game, mummy_utils, paths, views/[game, round]
+
+type GameHandler = proc(request: Request, game: var Game) {.gcsafe.}
+type RoundHandler = proc(request: Request, game: var Game, id: int) {.gcsafe.}
+
+proc toHandler(wrapped: GameHandler): RequestHandler =
+  return proc(req: Request) =
+    if "game" notin req.cookies:
+      req.redirect(paths.index)
+    else:
+      var game = req.cookies["game"].load()
+      req.wrapped(game)
+
+proc toHandler(wrapped: RoundHandler): RequestHandler =
+  return toHandler do (req: Request, game: var Game):
+    req.wrapped(game, req.query["id"].parseInt)
 
 template mainContent(inner): string =
   let content = render:
@@ -25,9 +40,6 @@ template mainContent(inner): string =
           inner
   content
 
-proc cookie(game: Game): string =
-  setCookie("game", game.save(), path = "/", noName = true)
-
 var router: Router
 
 type IndexPage = object
@@ -41,77 +53,38 @@ proc initIndexPage(req: Request): IndexPage =
 proc render(page: IndexPage) =
   if page.hasGame:
     p: a ".secondary":
-      href "./game"
+      href paths.game
       role "button"
       say "Resume last game"
     form:
-      hxPost "./game"
+      hxPost paths.game
       page.gameForm.render()
       button:
         ttype "submit"
         say "Start game"
 
-router.get(paths.index) do (req: Request):
-  let resp = mainContent: req.initIndexPage.render()
-  req.respond(200, body = resp)
-
-router.post(paths.game) do (req: Request):
-  var game: Game
-  let form = req.body.parseSearch.initGameForm()
-  game.players = form.players.mapIt(it.value)
+proc updateGameAndRedirect(req: Request, game: Game) =
   var headers: HttpHeaders
-  headers["Set-Cookie"] = game.cookie()
+  headers["Set-Cookie"] = setCookie("game", game.save(), path = "/", noName = true)
   headers["Location"] = paths.game
   req.respond(303, headers)
 
-router.get(paths.game) do (req: Request):
-  if "game" notin req.cookies:
-    req.redirect(paths.index)
-  else:
-    var game = req.cookies["game"].load()
-    let resp = mainContent:
-      form:
-        hxPost paths.round
-        initRoundForm(game, req.query).render()
-        button:
-          ttype: "submit"
-          say "Add round"
-      h4: say "Results"
-      table:
-        role "grid"
-        thead:
-          tr:
-            th: say "Round"
-            for player in game.players:
-              th: say player
-        tbody:
-          for i, round in game.rounds:
-            tr:
-              td: a:
-                href &"{paths.round}?id={i}"
-                say &"Round {i + 1}"
-              for player in game.players:
-                td: say $round.pointsWon(player)
-          tr:
-            td: say "Sum"
-            for player in game.players:
-              td: say $game.rounds.mapIt(it.pointsWon(player)).sum
-      a ".secondary":
-        href paths.game
-        role "button"
-        say "Start a new game"
-    req.respond(200, body = resp)
+proc indexHandler(req: Request) =
+  let resp = mainContent: req.initIndexPage.render()
+  req.respond(200, body = resp)
 
-proc toRound(roundForm: RoundForm): Round =
-  result.bidder = roundForm.bidder
-  result.partners = roundForm.partners
-  result.bidderWon = roundForm.bidderWon
-  result.wager = roundForm.wager
+proc createGameHandler(req: Request) =
+  var game: Game
+  let form = req.body.parseSearch.initGameForm()
+  game.players = form.players.mapIt(it.value)
+  req.updateGameAndRedirect(game)
 
-router.get(paths.round) do (req: Request):
-  var game = req.cookies["game"].load()
-  var id = req.query["id"].parseInt
-  var round = game.rounds[id]
+proc viewGameHandler(req: Request, game: var Game) =
+  let resp = mainContent: GameDetails(game: game, query: req.query).render()
+  req.respond(200, body = resp)
+
+proc editRoundHandler(req: Request, game: var Game, id: int) =
+  let round = game.rounds[id]
   let resp = mainContent:
     h3: say "Edit round"
     form:
@@ -131,34 +104,30 @@ router.get(paths.round) do (req: Request):
       say "Delete round"
   req.respond(200, body = resp)
 
-router.delete(paths.round) do (req: Request):
-  var game = req.cookies["game"].load()
-  var id = req.query["id"].parseInt
+proc deleteRoundHandler(req: Request, game: var Game, id: int) =
   game.delete(id)
-  var headers: HttpHeaders
-  headers["Set-Cookie"] = game.cookie()
-  headers["Location"] = paths.game
-  req.respond(303, headers)
+  req.updateGameAndRedirect(game)
 
-router.put(paths.round) do (req: Request):
-  var game = req.cookies["game"].load()
-  var id = req.query["id"].parseInt
+proc updateRoundHandler(req: Request, game: var Game, id: int) =
   var round = game.initRoundForm(req.body.parseSearch).toRound()
   game.update(id, round)
-  var headers: HttpHeaders
-  headers["Set-Cookie"] = game.cookie()
-  headers["Location"] = paths.game
-  req.respond(303, headers)
+  req.updateGameAndRedirect(game)
 
-router.post(paths.round) do (req: Request):
-  var game = req.cookies["game"].load()
-  let roundForm = game.initRoundForm(req.body.parseSearch)
-  game.add(roundForm.toRound())
-  var headers: HttpHeaders
-  headers["Set-Cookie"] = game.cookie()
-  headers["Location"] = paths.game
-  req.respond(303, headers)
+proc createRoundHandler(req: Request, game: var Game) =
+  let round = game.initRoundForm(req.body.parseSearch).toRound()
+  game.add(round)
+  req.updateGameAndRedirect(game)
 
+router.get(paths.index.route, indexHandler)
+router.post(paths.game.route, createGameHandler)
+router.get(paths.game.route, viewGameHandler.toHandler())
+router.get(paths.round.route, editRoundHandler.toHandler())
+router.delete(paths.round.route, deleteRoundHandler.toHandler())
+router.put(paths.round.route, updateRoundHandler.toHandler())
+router.post(paths.round.route, createRoundHandler.toHandler())
+
+let port = (try: paramStr(1) except: "8080").parseInt().Port
+# BASE = (try: paramStr(2) except: "").parseInt().Port
 let server = newServer(router)
-echo "Serving on http://localhost:8080"
-server.serve(Port(8080))
+echo &"Serving on http://localhost:{port.uint16}"
+server.serve(port)

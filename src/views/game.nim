@@ -1,4 +1,4 @@
-import webby, dekao, dekao/htmx, ../mummy_utils, strformat
+import webby, dekao, dekao/htmx, ../mummy_utils, strformat, round, ../paths, ../game, sequtils, math
 
 type
   PlayerInfo* = object
@@ -8,6 +8,43 @@ type
   GameForm* = object
     num*: int
     players*: seq[PlayerInfo]
+
+type GameDetails* = object
+  game*: Game
+  query*: QueryParams
+
+proc render*(gameDetails: GameDetails) =
+  form:
+    hxPost paths.round
+    initRoundForm(gameDetails.game, gameDetails.query).render()
+    button:
+      ttype: "submit"
+      say "Add round"
+  h4: say "Results"
+  table:
+    role "grid"
+    thead:
+      tr:
+        th: say "Round"
+        for player in gameDetails.game.players:
+          th: say player
+    tbody:
+      for i, round in gameDetails.game.rounds:
+        tr:
+          td: a:
+            href &"{paths.round}?id={i}"
+            say &"Round {i + 1}"
+          for player in gameDetails.game.players:
+            td: say $round.pointsWon(player)
+      tr:
+        td: say "Sum"
+        for player in gameDetails.game.players:
+          td: say $gameDetails.game.rounds.mapIt(it.pointsWon(player)).sum
+  a ".secondary":
+    href paths.game
+    role "button"
+    say "Start a new game"
+
 
 proc initGameForm*(q: QueryParams): GameForm =
   result.num = q.getOrDefault("num", "5").parseInt
