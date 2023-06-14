@@ -55,7 +55,7 @@ proc initGameForm*(q: QueryParams): GameForm =
 
 proc render*(form: GameForm) =
   tdiv("#gameForm"):
-    hxGet "./"
+    hxGet paths.game
     hxTrigger "change from:.dynamic"
     hxInclude "this"
     hxTarget "this"

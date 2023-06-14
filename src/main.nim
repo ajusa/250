@@ -88,7 +88,7 @@ proc editRoundHandler(req: Request, game: var Game, id: int) =
   let resp = mainContent:
     h3: say "Edit round"
     form:
-      hxPut &"./rounds?id={id}"
+      hxPut &"{paths.round}?id={id}"
       var roundForm = RoundForm(game: game,
                                 title: &"Round {id + 1}",
                                 wager: round.wager,
