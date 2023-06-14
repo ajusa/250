@@ -14,7 +14,7 @@ proc initRoundForm*(game: Game, q: QueryParams): RoundForm =
   result.wager = q.getOrDefault("wager", "120").parseInt
   result.bidder = q["bidder"]
   result.bidderWon = "bidderWon" in q
-  for i in 1..2:
+  for i in 0..1:
     result.partners.add(q[&"partner{i}"])
 
 proc toRound*(roundForm: RoundForm): Round =

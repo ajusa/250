@@ -13,6 +13,7 @@ proc toHandler(wrapped: GameHandler): RequestHandler =
       req.redirect(paths.index)
     else:
       var game = req.cookies["game"].load()
+      echo game
       req.wrapped(game)
 
 proc toHandler(wrapped: RoundHandler): RequestHandler =

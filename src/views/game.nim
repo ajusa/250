@@ -41,7 +41,7 @@ proc render*(gameDetails: GameDetails) =
         for player in gameDetails.game.players:
           td: say $gameDetails.game.rounds.mapIt(it.pointsWon(player)).sum
   a ".secondary":
-    href paths.game
+    href paths.index
     role "button"
     say "Start a new game"
 
