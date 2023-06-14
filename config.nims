@@ -1,9 +1,13 @@
 --threads:on
 --mm:orc
-# --cc:clang 
-# --clang.exe:"zigcc" 
-# --clang.linkerexe:"zigcc" 
-# --forceBuild:on
-# --passC:"-target aarch64-linux-gnu"
-# --passL:"-target aarch64-linux-gnu"
-# --cpu:arm64
+
+task arm, "builds binary for aarch64":
+  switch("cc", "clang")
+  switch("d", "release")
+  switch("clang.exe", "zigcc")
+  switch("clang.linkerexe", "zigcc")
+  switch("forceBuild", "on")
+  switch("passC", "-target aarch64-linux-gnu")
+  switch("passL", "-target aarch64-linux-gnu")
+  switch("cpu", "arm64")
+  setCommand("c", "src/main.nim")
