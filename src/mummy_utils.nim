@@ -14,4 +14,3 @@ proc redirect*(req: Request, path: string) =
   var headers: HttpHeaders
   headers["Location"] = path
   req.respond(302, headers)
-

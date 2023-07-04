@@ -1,27 +1,4 @@
-import webby, dekao, dekao/htmx, ../mummy_utils, strformat, ../game, mummy
-
-type RoundForm* = object
-  game*: Game
-  title*: string
-  wager*: int
-  bidder*: string
-  partners*: seq[string]
-  bidderWon*: bool
-
-proc initRoundForm*(game: Game, q: QueryParams): RoundForm =
-  result.game = game
-  result.title = &"Round {result.game.rounds.len + 1}"
-  result.wager = q.getOrDefault("wager", "120").parseInt
-  result.bidder = q["bidder"]
-  result.bidderWon = "bidderWon" in q
-  for i in 0..1:
-    result.partners.add(q[&"partner{i}"])
-
-proc toRound*(roundForm: RoundForm): Round =
-  result.bidder = roundForm.bidder
-  result.partners = roundForm.partners
-  result.bidderWon = roundForm.bidderWon
-  result.wager = roundForm.wager
+import webby, dekao, dekao/htmx, ../mummy_utils, strformat, ../game, mummy, ../controllers/round_controller, ../paths, index, with
 
 proc playerOptions(game: Game, value = "") =
   for player in game.players:
@@ -57,3 +34,15 @@ proc render*(roundForm: RoundForm) =
           name "bidderWon"
           if roundForm.bidderWon: checked ""
         say "Did the bidder win?"
+
+proc edit*(roundView: RoundView): string = with roundView: mainContent:
+  h3: say "Edit round"
+  form:
+    hxPut &"{paths.round}?id={id}"
+    roundForm.render()
+    button:
+      ttype: "submit"
+      say "Edit round"
+  button ".secondary":
+    hxDelete &"{paths.round}?id={id}"
+    say "Delete round"

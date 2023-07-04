@@ -1,19 +1,6 @@
-import webby, dekao, dekao/htmx, ../mummy_utils, strformat, round, ../paths, ../game, sequtils, math
+import ../controllers/[game_controller, round_controller], with, dekao, dekao/htmx, index, ../paths, round_view, sequtils, ../game, strformat, math
 
-type
-  PlayerInfo* = object
-    title*: string
-    value*: string
-    name*: string
-  GameForm* = object
-    num*: int
-    players*: seq[PlayerInfo]
-
-type GameDetails* = object
-  game*: Game
-  query*: QueryParams
-
-proc render*(gameDetails: GameDetails) =
+proc show*(gameDetails: GameDetails): string = mainContent:
   form:
     hxPost paths.round
     initRoundForm(gameDetails.game, gameDetails.query).render()
@@ -45,15 +32,21 @@ proc render*(gameDetails: GameDetails) =
     role "button"
     say "Start a new game"
 
+proc new*(gameView: GameView): string = with gameView: mainContent:
+  if inProgress:
+    p: a ".secondary":
+      href paths.game
+      role "button"
+      say "Resume last game"
+  form:
+    hxPost paths.game
+    gameForm.render()
+    button:
+      ttype "submit"
+      say "Start game"
 
-proc initGameForm*(q: QueryParams): GameForm =
-  result.num = q.getOrDefault("num", "5").parseInt
-  for i in 1..result.num:
-    var info = PlayerInfo(title: &"Player {i}", name: &"players{i}")
-    info.value = q[info.name]
-    result.players.add(info)
 
-proc render*(form: GameForm) =
+proc render(form: GameForm) =
   tdiv("#gameForm"):
     hxGet paths.index
     hxTrigger "change from:.dynamic"
