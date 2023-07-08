@@ -1,61 +1,38 @@
-import mummy, ../mummy_utils, ../game, strutils, strformat
-from game_controller import updateGameAndRedirect
-
-type RoundForm* = object
-  game*: Game
-  title*: string
-  wager*: int
-  bidder*: string
-  partners*: seq[string]
-  bidderWon*: bool
+import mummy, ../mummy_utils, ../game, strutils, sequtils
+from game_controller import updateGameAndRedirect, loadGame
 
 type RoundView* = object
-  roundForm*: RoundForm
+  round*: Round
   id*: int
+  players*: seq[string]
 
-proc initRoundForm*(game: Game, q: QueryParams): RoundForm =
-  result.game = game
-  result.title = &"Round {result.game.rounds.len + 1}"
-  result.wager = q.getOrDefault("wager", "120").parseInt
+proc initRound(q: QueryParams): Round =
   result.bidder = q["bidder"]
+  result.partners = q.toBase.filterIt(it[0] == "partners").mapIt(it[1])
   result.bidderWon = "bidderWon" in q
-  for i in 0..1:
-    result.partners.add(q[&"partner{i}"])
+  result.wager = q["wager"].parseInt
 
-proc initRoundForm*(game: Game, id: int): RoundForm =
-  let round = game.rounds[id]
-  result.game = game
-  result.title = &"Round {id + 1}"
-  result.wager = round.wager
-  result.bidder = round.bidder
-  result.bidderWon = round.bidderWon
-  result.partners = round.partners
-
-proc toRound(roundForm: RoundForm): Round =
-  result.bidder = roundForm.bidder
-  result.partners = roundForm.partners
-  result.bidderWon = roundForm.bidderWon
-  result.wager = roundForm.wager
+proc getId(req: Request): int = req.query["id"].parseInt
 
 proc delete*(req: Request) =
-  var game = req.cookies["game"].load()
-  game.delete(req.query["id"].parseInt)
+  var game = req.loadGame()
+  game.delete(req.getId())
   req.updateGameAndRedirect(game)
 
 proc update*(req: Request) =
-  var game = req.cookies["game"].load()
-  var round = game.initRoundForm(req.body.parseSearch).toRound()
-  game.update(req.query["id"].parseInt, round)
+  var game = req.loadGame()
+  var round = initRound(req.body.parseSearch)
+  game.update(req.getId(), round)
   req.updateGameAndRedirect(game)
 
 proc create*(req: Request) =
-  var game = req.cookies["game"].load()
-  var round = game.initRoundForm(req.body.parseSearch).toRound()
+  var game = req.loadGame()
+  var round = initRound(req.body.parseSearch)
   game.add(round)
   req.updateGameAndRedirect(game)
 
 proc edit*(req: Request): RoundView =
-  var game = req.cookies["game"].load()
-  let id = req.query["id"].parseInt
-  result.roundForm = initRoundForm(game, id)
-  result.id = id
+  var game = req.loadGame()
+  result.id = req.getId()
+  result.round = game.rounds[req.getId()]
+  result.players = game.players
