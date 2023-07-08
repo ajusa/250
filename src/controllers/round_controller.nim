@@ -1,10 +1,5 @@
-import mummy, ../mummy_utils, ../game, strutils, sequtils
+import mummy, ../mummy_utils, ../game, strutils, sequtils, ../views/round_view
 from game_controller import updateGameAndRedirect, loadGame
-
-type RoundView* = object
-  round*: Round
-  id*: int
-  players*: seq[string]
 
 proc initRound(q: QueryParams): Round =
   result.bidder = q["bidder"]
@@ -33,6 +28,4 @@ proc create*(req: Request) =
 
 proc edit*(req: Request): RoundView =
   var game = req.loadGame()
-  result.id = req.getId()
-  result.round = game.rounds[req.getId()]
-  result.players = game.players
+  RoundView(id: req.getId(), round: game.rounds[req.getId()], players: game.players)

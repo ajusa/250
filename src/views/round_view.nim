@@ -1,4 +1,9 @@
-import with, dekao, dekao/htmx, strformat, ../game, ../controllers/round_controller, ../paths, index, with
+import with, dekao, dekao/htmx, strformat, ../game, ../paths, index
+
+type RoundView* = object
+  id*: int
+  round*: Round
+  players*: seq[string]
 
 proc options(players: seq[string], value = "") =
   for player in players:

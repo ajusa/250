@@ -4,7 +4,7 @@ import ../controllers/[game_controller, round_controller], round_view, ../game, 
 proc show*(gameView: GameView): string = with gameView: mainContent:
   form:
     hxPost paths.round
-    RoundView(id: game.rounds.len + 1, players: game.players, round: Round(wager: 120)).renderForm()
+    gameView.roundView.renderForm()
     button:
       ttype: "submit"
       say "Add round"
