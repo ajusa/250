@@ -5,6 +5,7 @@ type
     inProgress*: bool
     game*: Game
     roundView*: RoundView
+    totalPointsWon*: seq[int]
 
 proc initGame(q: QueryParams): Game =
   result.players = q.toBase.filterIt(it[0] == "players").mapIt(it[1])
@@ -25,6 +26,7 @@ proc show*(req: Request): GameView =
     result.roundView = RoundView(id: game.rounds.len + 1,
                                  players: game.players, 
                                  round: Round(wager: 120))
+    result.totalPointsWon = game.players.mapIt(game.totalPointsWon(it))
 
 proc new*(req: Request): GameView =
   result.inProgress = "game" in req.cookies

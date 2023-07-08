@@ -19,6 +19,10 @@ proc pointsWon*(round: Round, player: string): int =
   elif round.won(player): round.wager
   else: 0
 
+proc totalPointsWon*(game: Game, player: string): int =
+  for round in game.rounds:
+    result += round.pointsWon(player)  
+
 proc add*(game: var Game, round: Round) = 
   game.rounds.add(round)
 

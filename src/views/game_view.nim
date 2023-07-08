@@ -1,5 +1,5 @@
-import with, dekao, dekao/htmx, sequtils, strformat, math
-import ../controllers/[game_controller, round_controller], round_view, ../game, index, ../paths
+import with, dekao, dekao/htmx, strformat
+import ../controllers/[game_controller], round_view, ../game, index, ../paths
 
 proc show*(gameView: GameView): string = with gameView: mainContent:
   form:
@@ -26,8 +26,7 @@ proc show*(gameView: GameView): string = with gameView: mainContent:
             td: say $round.pointsWon(player)
       tr:
         td: say "Sum"
-        for player in game.players:
-          td: say $game.rounds.mapIt(it.pointsWon(player)).sum
+        for total in totalPointsWon: td: say total
   a ".secondary":
     href paths.index
     role "button"
