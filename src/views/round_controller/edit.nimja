@@ -1,0 +1,9 @@
+{% extends "views/index.nimja" %}
+{% block content %}
+<h3>Edit round</h3>
+<form hx-put="{{paths.round}}?id={{id}}">
+  {% importnimja "views/round_controller/_form.nimja" %}
+  <button type="submit">Save round</button>
+</form>
+<button class="secondary" hx-delete="{{paths.round}}?id={{id}}">Delete round</button>
+{% endblock %}

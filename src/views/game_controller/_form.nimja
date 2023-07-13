@@ -1,0 +1,13 @@
+<label>Number of players</label>
+<select name="num">
+  <option>5</option>
+  <option>7</option>
+</select>
+{% for i in 0..6 %}
+<div {% if i>= 5 %} _="
+   on load or change from first <[name=num] /> 
+   shownWhen(me, value of first <[name=num] /> is 7)" {% endif %}>
+  <label>Player {{i+1}}</label>
+  <input type="text" name="players" required placeholder="Player name">
+</div>
+{% endfor %}

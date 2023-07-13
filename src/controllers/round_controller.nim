@@ -1,4 +1,4 @@
-import mummy, ../mummy_utils, ../game, strutils, sequtils, ../views/round_view
+import mummy, nails, ../game, strutils, sequtils, ../views/round_view
 from game_controller import updateGameAndRedirect, loadGame
 
 proc initRound(q: QueryParams): Round =

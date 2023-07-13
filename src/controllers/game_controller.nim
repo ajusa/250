@@ -1,7 +1,6 @@
 import std/[sequtils, cookies]
-import mummy, webby, ../mummy_utils, ../paths, ../game, ../views/round_view
-type
-  GameView* = object
+import mummy, webby, nails, ../paths, ../game, ../views/round_view
+type GameView* = object
     inProgress*: bool
     game*: Game
     roundView*: RoundView
@@ -23,7 +22,7 @@ proc show*(req: Request): GameView =
   else:
     let game = req.loadGame()
     result.game = game
-    result.roundView = RoundView(id: game.rounds.len + 1,
+    result.roundView = RoundView(id: game.rounds.len,
                                  players: game.players, 
                                  round: Round(wager: 120))
     result.totalPointsWon = game.players.mapIt(game.totalPointsWon(it))

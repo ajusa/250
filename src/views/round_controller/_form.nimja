@@ -1,0 +1,26 @@
+{% macro options(players: seq[string], value = ""): string = %}
+  {% for player in players %}
+  <option value="{{player}}" {{if value == player: "selected" else: ""}}>
+    {{player}}
+  </option>
+  {% endfor %}
+{% endmacro %}
+
+<article>
+  <h4>Round {{id + 1}}</h4>
+  <label>Bidder</label>
+  <select name="bidder">{{players.options(round.bidder)}}</select>
+  <label>Points wagered</label>
+  <input type="number" name="wager" value="{{round.wager}}" step="5" min="120" max="250">
+  {% for i in 0..0 %}
+  <label>Partner {{i + 1}}</label>
+  <select name="partners">{{players.options(round.partners[i])}}</select>
+  {{round.partners}}
+  {% endfor %}
+  <fieldset>
+    <label>
+      <input type="checkbox" name="bidderWon" {{if round.bidderWon: "checked" else: "" }}>
+      Did the bidder win?
+    </label>
+  </fieldset>
+</article>
