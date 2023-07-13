@@ -9,7 +9,7 @@ proc options(players: seq[string], value = "") =
   for player in players:
     option: (value player; say player; if value == player: selected "")
 
-proc renderForm*(roundView: RoundView) = with roundView:
+proc form*(roundView: RoundView) = with roundView:
   article:
     h4: say &"Round {id + 1}"
     label: say "Bidder"
@@ -35,6 +35,6 @@ proc edit*(roundView: RoundView): string = with roundView: mainContent:
   h3: say "Edit round"
   form:
     hxPut &"{paths.round}?id={id}"
-    roundView.renderForm()
+    roundView.form()
     button: ttype "submit"; say "Edit round"
   button ".secondary": hxDelete &"{paths.round}?id={id}"; say "Delete round"
