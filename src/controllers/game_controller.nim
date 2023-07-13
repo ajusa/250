@@ -1,10 +1,10 @@
 import std/[sequtils, cookies]
 import mummy, webby, nails, ../paths, ../game, ../views/round_view
 type GameView* = object
-    inProgress*: bool
-    game*: Game
-    roundView*: RoundView
-    totalPointsWon*: seq[int]
+  inProgress*: bool
+  game*: Game
+  roundView*: RoundView
+  totalPointsWon*: seq[int]
 
 proc initGame(q: QueryParams): Game =
   result.players = q.toBase.filterIt(it[0] == "players").mapIt(it[1])
@@ -23,8 +23,8 @@ proc show*(req: Request): GameView =
     let game = req.loadGame()
     result.game = game
     result.roundView = RoundView(id: game.rounds.len,
-                                 players: game.players, 
-                                 round: Round(wager: 120))
+                                 players: game.players,
+                                 round: Round(wager: 120, partners: @[""]))
     result.totalPointsWon = game.players.mapIt(game.totalPointsWon(it))
 
 proc new*(req: Request): GameView =

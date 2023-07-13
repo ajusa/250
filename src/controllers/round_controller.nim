@@ -9,22 +9,21 @@ proc initRound(q: QueryParams): Round =
 
 proc getId(req: Request): int = req.query["id"].parseInt
 
-proc delete*(req: Request) =
-  var game = req.loadGame()
-  game.delete(req.getId())
+template mutateGame(req: Request, body: untyped): untyped =
+  var game {.inject.} = req.loadGame()
+  body
   req.updateGameAndRedirect(game)
 
-proc update*(req: Request) =
-  var game = req.loadGame()
+proc delete*(req: Request) = req.mutateGame:
+  game.delete(req.getId())
+
+proc update*(req: Request) = req.mutateGame:
   var round = initRound(req.body.parseSearch)
   game.update(req.getId(), round)
-  req.updateGameAndRedirect(game)
 
-proc create*(req: Request) =
-  var game = req.loadGame()
+proc create*(req: Request) = req.mutateGame:
   var round = initRound(req.body.parseSearch)
   game.add(round)
-  req.updateGameAndRedirect(game)
 
 proc edit*(req: Request): RoundView =
   var game = req.loadGame()

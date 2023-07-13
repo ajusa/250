@@ -7,18 +7,13 @@ type RoundView* = object
 
 proc options(players: seq[string], value = "") =
   for player in players:
-    option:
-      value player
-      say player
-      if value == player: selected ""
+    option: (value player; say player; if value == player: selected "")
 
 proc renderForm*(roundView: RoundView) = with roundView:
   article:
     h4: say &"Round {id + 1}"
     label: say "Bidder"
-    select:
-      name "bidder"
-      players.options(round.bidder)
+    select: name "bidder"; players.options(round.bidder)
     label: say "Points wagered"
     input:
       ttype "number"
@@ -27,27 +22,19 @@ proc renderForm*(roundView: RoundView) = with roundView:
       step "5"
       min "120"
       max "250"
-    for i in 1..2:
+    for i in 0..0:
       label: say &"Partner {i + 1}"
-      select:
-        name &"partners"
-        players.options()
+      select: name &"partners"; players.options(round.partners[i])
     fieldset:
       label:
-        input:
-          ttype "checkbox"
-          name "bidderWon"
-          if round.bidderWon: checked ""
-        say "Did the bidder win?"
+        input: (ttype "checkbox"; name "bidderWon"; 
+          if round.bidderWon: checked "";
+          say "Did the bidder win?")
 
 proc edit*(roundView: RoundView): string = with roundView: mainContent:
   h3: say "Edit round"
   form:
     hxPut &"{paths.round}?id={id}"
     roundView.renderForm()
-    button:
-      ttype: "submit"
-      say "Edit round"
-  button ".secondary":
-    hxDelete &"{paths.round}?id={id}"
-    say "Delete round"
+    button: ttype "submit"; say "Edit round"
+  button ".secondary": hxDelete &"{paths.round}?id={id}"; say "Delete round"
