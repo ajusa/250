@@ -1,3 +1,4 @@
+nim arm
 ssh oracle killall screen
 set -e
 scp src/main oracle:~/250
