@@ -1,4 +1,5 @@
-template mainContent*(inner): untyped =
+import dekao
+template mainContent*(inner): untyped = render:
   say "<!DOCTYPE html>"
   html:
     head:

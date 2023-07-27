@@ -1,55 +1,34 @@
-import std/[sequtils, cookies, strformat]
+import std/[sequtils, strformat]
 import mummy, dekao, dekao/htmx, index, webby, nails, ../paths, ../game, round
 
-type GameView* = object
-  inProgress*: bool
-  game*: Game
-  round*: Round
-  totalPointsWon*: seq[int]
-
-proc updateGameAndRedirect(req: Request, game: Game) =
-  var headers = {"Set-Cookie": setCookie("game", game.save(), path = "/", noName = true),
-                 "Location": paths.game}.toSeq.HttpHeaders
-  req.respond(303, headers)
-
-proc gameUpdater*(
+proc needsGame*(
   controller: proc(req: Request, game: var Game) {.gcsafe.}): RequestHandler =
   proc(req: Request) =
     var game = req.loadGame()
     req.controller(game)
-    req.updateGameAndRedirect(game)
 
-proc show*(req: Request): GameView =
-  result.game = req.loadGame()
-  result.round = Round(wager: 120, partners: @["", ""])
-  result.totalPointsWon = result.game.players.mapIt(result.game.totalPointsWon(it))
-
-proc new*(req: Request): GameView =
-  result.inProgress = "game" in req.cookies
-
-proc create*(req: Request) =
-  var game = Game(players: req.body.parseSearch.toBase.filterIt(it[0] == "players").mapIt(it[1]))
-  req.updateGameAndRedirect(game)
-
-proc show*(view: GameView) = mainContent:
-  form:
-    hxPost paths.round
-    view.round.form(view.game.players, view.game.rounds.len)
-    button: ttype "submit"; say "Add round"
-  h4: say "Results"
-  table:
-    role "grid"
-    thead: tr:
-      th: say "Round"
-      for player in view.game.players: th: say player
-    tbody:
-      for i, round in view.game.rounds: tr:
-        td: a: href &"{paths.round}?id={i}"; say &"Round {i + 1}"
-        for player in view.game.players: td: say round.pointsWon(player)
-      tr:
-        td: say "Sum"
-        for total in view.totalPointsWon: td: say total
-  a ".secondary": href paths.index; role "button"; say "Start a new game"
+proc show*(req: Request, game: var Game) =
+  var round = Round(wager: 120, partners: @["", ""])
+  let resp = mainContent:
+    form:
+      hxPost paths.round
+      round.form(game.players, game.rounds.len)
+      button: ttype "submit"; say "Add round"
+    h4: say "Results"
+    table:
+      role "grid"
+      thead: tr:
+        th: say "Round"
+        for player in game.players: th: say player
+      tbody:
+        for i, round in game.rounds: tr:
+          td: a: href &"{paths.round}?id={i}"; say &"Round {i + 1}"
+          for player in game.players: td: say round.pointsWon(player)
+        tr:
+          td: say "Sum"
+          for player in game.players: td: say game.totalPointsWon(player)
+    a ".secondary": href paths.index; role "button"; say "Start a new game"
+  req.respond(resp)
 
 proc gameForm() =
   label: say "Number of players"
@@ -65,10 +44,16 @@ proc gameForm() =
       label: say &"Player {i + 1}"
       input: ttype "text"; name "players"; required ""; placeholder "Player name"
 
-proc new*(view: GameView) = mainContent:
-  if view.inProgress:
-    p: a ".secondary": href paths.game; role "button"; say "Resume last game"
-  form:
-    hxPost paths.game
-    gameForm()
-    button: ttype "submit"; say "Start game"
+proc new*(req: Request) =
+  let resp = mainContent:
+    if "game" in req.cookies:
+      p: a ".secondary": href paths.game; role "button"; say "Resume last game"
+    form:
+      hxPost paths.game
+      gameForm()
+      button: ttype "submit"; say "Start game"
+  req.respond(resp)
+
+proc create*(req: Request) =
+  var game = Game(players: req.body.parseSearch.toBase.filterIt(it[0] == "players").mapIt(it[1]))
+  req.updateGameAndRedirect(game)
