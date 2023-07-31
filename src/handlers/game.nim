@@ -1,17 +1,14 @@
-import std/[sequtils, strformat]
-import mummy, dekao, dekao/htmx, index, webby, nails, ../paths, ../game, round
+import std/strformat
+import mummy, dekao, dekao/htmx, index, nails, ../paths, ../game, round
 
-proc needsGame*(
-  controller: proc(req: Request, game: var Game) {.gcsafe.}): RequestHandler =
-  proc(req: Request) =
-    var game = req.loadGame()
-    req.controller(game)
+proc fromRequest*(req: Request, game: var Game) =
+  game = req.cookies["game"].load()
 
-proc show*(req: Request, game: var Game) =
+proc show*(req: Request, game: Game) =
   var round = Round(wager: 120, partners: @["", ""])
   let resp = mainContent:
     form:
-      hxPost paths.round
+      hxPost paths.round()
       round.form(game.players, game.rounds.len)
       button: ttype "submit"; say "Add round"
     h4: say "Results"
@@ -22,12 +19,12 @@ proc show*(req: Request, game: var Game) =
         for player in game.players: th: say player
       tbody:
         for i, round in game.rounds: tr:
-          td: a: href &"{paths.round}?id={i}"; say &"Round {i + 1}"
+          td: a: href paths.round(i); say &"Round {i + 1}"
           for player in game.players: td: say round.pointsWon(player)
         tr:
           td: say "Sum"
           for player in game.players: td: say game.totalPointsWon(player)
-    a ".secondary": href paths.index; role "button"; say "Start a new game"
+    a ".secondary": href paths.index(); role "button"; say "Start a new game"
   req.respond(resp)
 
 proc gameForm() =
@@ -44,16 +41,18 @@ proc gameForm() =
       label: say &"Player {i + 1}"
       input: ttype "text"; name "players"; required ""; placeholder "Player name"
 
-proc new*(req: Request) =
+proc fromRequest*(req: Request, args: var tuple[hasGame: bool]) =
+  args.hasGame = "game" in req.cookies
+
+proc new*(req: Request, args: tuple[hasGame: bool]) =
   let resp = mainContent:
-    if "game" in req.cookies:
-      p: a ".secondary": href paths.game; role "button"; say "Resume last game"
+    if args.hasGame:
+      p: a ".secondary": href paths.game(); role "button"; say "Resume last game"
     form:
-      hxPost paths.game
+      hxPost paths.game()
       gameForm()
       button: ttype "submit"; say "Start game"
   req.respond(resp)
 
-proc create*(req: Request) =
-  var game = Game(players: req.body.parseSearch.toBase.filterIt(it[0] == "players").mapIt(it[1]))
-  req.updateGameAndRedirect(game)
+proc create*(req: Request, args: tuple[players: seq[string]]) =
+  req.updateGameAndRedirect(Game(players: args.players))

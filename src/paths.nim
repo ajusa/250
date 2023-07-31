@@ -1,12 +1,18 @@
-import strutils, sugar
+import strutils, webby
 when defined(release):
   const BASE = "/250"
 else:
   const BASE = ""
 
-proc path*(url: string): string = BASE & url
-proc route*(url: string): string = dup url: removePrefix(BASE)
+proc path*(url: string): Url = parseUrl(BASE & url)
+proc route*(url: Url): string =
+  result = url.path
+  result.removePrefix(BASE)
+converter toString*(url: Url): string = $url
 
-const index* = path "/"
-const game* = path "/game"
-const round* = path "/game/rounds"
+proc index*(): Url = path("/")
+proc game*(): Url = path("/game")
+proc round*(): Url = path("/game/rounds")
+proc round*(id: int): Url =
+  result = round()
+  result.query["id"] = $id
