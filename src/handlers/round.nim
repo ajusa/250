@@ -34,9 +34,17 @@ proc form*(round: Round, players: seq[string], id: int) =
       step "5"
       min "120"
       max "250"
-    for i in 0..1:
-      label: say &"Partner {i + 1}"
-      select: name &"partners"; players.options(round.partners[i])
+    label: say "Partner 1"
+    select: 
+      name &"partners"
+      players.options(round.partners[0])
+    label: say "Partner 2"
+    select: 
+      name &"partners"
+      option:
+        value: ""
+        say "None"
+      players.options(round.partners[1])
     fieldset:
       label:
         input:

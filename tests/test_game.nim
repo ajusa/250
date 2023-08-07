@@ -24,3 +24,8 @@ suite "round when bidder loses":
     check bidderLostRound.pointsWon("me") == -150
     check bidderLostRound.pointsWon("notme") == 0
     check bidderLostRound.pointsWon("other player") == 150
+
+suite "other":
+  test "ensures unknown players for a round are ignored":
+    let round = Round(bidder: "me", wager: 120, partners: @["not me", ""], bidderWon: true)
+    check Game(rounds: @[round]).totalPointsWon("me") == 240
