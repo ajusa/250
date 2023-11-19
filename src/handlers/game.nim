@@ -28,18 +28,20 @@ proc show*(req: Request, game: Game) =
   req.respond(resp)
 
 proc gameForm() =
-  label: say "Number of players"
-  select:
-    name "num"
-    option: say "5"
-    option: say "7"
-  for i in 0..6:
-    tdiv:
-      if i >= 5:
-        hs """on load or change from first <[name=num]/> 
-              shownWhen(me, value of first <[name=num]/> is 7)"""
-      label: say &"Player {i + 1}"
-      input: ttype "text"; name "players"; required ""; placeholder "Player name"
+  tdiv:
+    attr "v-scope", "{players: 5}"
+    label: say "Number of players"
+    select:
+      attr "v-model", "players"
+      name "num"
+      option: say "5"
+      option: say "7"
+    for i in 0..6:
+      tdiv:
+        if i >= 5:
+          attr "v-if", "Number(players) == 7"
+        label: say &"Player {i + 1}"
+        input: ttype "text"; name "players"; required ""; placeholder "Player name"
 
 proc fromRequest*(req: Request, args: var tuple[hasGame: bool]) =
   args.hasGame = "game" in req.cookies
