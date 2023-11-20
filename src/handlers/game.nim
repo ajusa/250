@@ -1,5 +1,5 @@
 import std/strformat
-import mummy, dekao, dekao/htmx, index, nails, ../paths, ../game, round
+import mummy, dekao, dekao/[htmx, vue], index, nails, ../paths, ../game, round
 
 proc fromRequest*(req: Request, game: var Game) =
   game = req.cookies["game"].load()
@@ -29,17 +29,17 @@ proc show*(req: Request, game: Game) =
 
 proc gameForm() =
   tdiv:
-    attr "v-scope", "{players: 5}"
+    vScope "{players: 5}"
     label: say "Number of players"
     select:
-      attr "v-model", "players"
+      vModel "players"
       name "num"
       option: say "5"
       option: say "7"
     for i in 0..6:
       tdiv:
         if i >= 5:
-          attr "v-if", "Number(players) == 7"
+          vIf "Number(players) == 7"
         label: say &"Player {i + 1}"
         input: ttype "text"; name "players"; required ""; placeholder "Player name"
 
