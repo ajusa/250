@@ -1,4 +1,4 @@
-import dekao, dekao/vue
+import dekao, dekao/vue, dekao/htmx
 template mainContent*(inner): untyped = render:
   say "<!DOCTYPE html>"
   html:
