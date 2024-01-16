@@ -34,9 +34,5 @@ proc pointsWon*(round: Round, player: string): int =
     elif player notin round.partners: multiplier = 1
   return multiplier * round.wager
 
-proc totalPointsWon*(twoFifty: TwoFifty, player: string): int =
-  for round in twoFifty.rounds:
-    result += round.pointsWon(player)
-
 proc save*(twoFifty: TwoFifty): TwoFiftySave =
   TwoFiftySave(twoFifty.toFlatty().compress.encode)
