@@ -26,10 +26,7 @@ proc newGameHandler*(request: Request) =
   request.respondHtml(resp)
 
 proc createGameHandler*(request: Request) =
-  var players: seq[string]
-  for (k, v) in request.params:
-    if k == "players": players.add(v)
-  request.updateAndRedirect(initTwoFifty(players))
+  request.updateAndRedirect(initTwoFifty(request.params.parseSeq("players")))
 
 proc showGameHandler*(request: Request) =
   let twoFifty = request.twoFifty()

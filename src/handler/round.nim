@@ -38,8 +38,7 @@ proc initRound(params: QueryParams): Round =
   result.bidder = params["bidder"]
   result.wager = params["wager"].parseInt
   result.bidderWon = "bidderWon" in params
-  for (k, v) in params:
-    if k == "partners": result.partners.add(v)
+  result.partners = params.parseSeq("partners")
 
 proc createRoundHandler*(request: Request) =
   var twoFifty = request.twoFifty()
