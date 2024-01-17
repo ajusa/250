@@ -11,8 +11,7 @@ proc gameForm() =
       option: say "7"
     for i in 1..7:
       tdiv:
-        if i > 5:
-          vIf "Number(players) == 7"
+        if i == 6 or i == 7: vIf "Number(players) == 7"
         label: say &"Player {i}"
         input: ttype "text"; name "players"; required ""; placeholder "Player name"
 
@@ -34,11 +33,10 @@ proc createGameHandler*(request: Request) =
 
 proc showGameHandler*(request: Request) =
   let twoFifty = request.twoFifty()
-  var round = initRound(partners = @["", ""])
   let resp = page:
     form:
       hxPost route.rounds.link
-      round.form(twoFifty.players, twoFifty.rounds.len)
+      initRound(partners = @["", ""]).form(twoFifty.players, twoFifty.rounds.len)
       button: ttype "submit"; say "Add round"
     h4: say "Results"
     table:

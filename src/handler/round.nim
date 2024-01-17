@@ -2,33 +2,30 @@ import strformat, common, mummy, webby, ../twofifty, ../route
 
 proc options(players: seq[string], value = "") =
   for player in players:
-    option: 
+    option:
       if value == player: selected ""
       value player
       say player
-
-proc wagerInput(value: int) =
-  label: say "Points wagered"
-  input:
-    ttype "number"
-    name "wager"
-    value $value
-    step "5"
-    min "120"
-    max "250"
 
 proc form*(round: Round, players: seq[string], id: int) =
   article:
     h4: say &"Round {id + 1}"
     label: say "Bidder"
     select: name "bidder"; players.options(round.bidder)
-    wagerInput(round.wager)
+    label: say "Points wagered"
+    input:
+      ttype "number"
+      name "wager"
+      value $round.wager
+      step "5"
+      min "120"
+      max "250"
     for i, partner in round.partners:
       label: say &"Partner {i + 1}"
-      select: 
-        name &"partners"
-        if i >= 1: option: value ""; say "None"
-        players.options(round.partners[i])
+      select:
+        name "partners"
+        if i != 0: option: value ""; say "None"
+        players.options(value = partner)
     fieldset:
       label:
         input:
@@ -38,10 +35,11 @@ proc form*(round: Round, players: seq[string], id: int) =
           say "Did the bidder win?"
 
 proc initRound(params: QueryParams): Round =
-  var partners: seq[string]
+  result.bidder = params["bidder"]
+  result.wager = params["wager"].parseInt
+  result.bidderWon = "bidderWon" in params
   for (k, v) in params:
-    if k == "partners": partners.add(v)
-  initRound(bidder = params["bidder"], wager = params["wager"].parseInt, bidderWon = "bidderWon" in params, partners = partners)
+    if k == "partners": result.partners.add(v)
 
 proc createRoundHandler*(request: Request) =
   var twoFifty = request.twoFifty()

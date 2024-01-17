@@ -10,8 +10,8 @@ proc url*(request: Request): Url =
 proc params*(request: Request): QueryParams =
   request.body.parseSearch
 
-proc cookies*(req: Request): StringTableRef =
-  req.headers["Cookie"].parseCookies
+proc cookies*(request: Request): StringTableRef =
+  request.headers["Cookie"].parseCookies
 
 proc cookie(twoFifty: TwoFifty): string =
   setCookie("game", string(twoFifty.save()), path = "/", noName = true)
