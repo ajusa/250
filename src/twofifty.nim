@@ -8,15 +8,14 @@ type
   TwoFifty* = object
     players*: seq[string]
     rounds*: seq[Round]
-  TwoFiftySave* = distinct string
 
 
 proc initTwoFifty*(players: seq[string] = @[], rounds: seq[Round] = @[]): TwoFifty =
   result.players = players
   result.rounds = rounds
 
-proc initTwoFifty*(save: TwoFiftySave): TwoFifty =
-  string(save).decode.uncompress.fromFlatty(TwoFifty)
+proc initTwoFifty*(save: string): TwoFifty =
+  save.decode.uncompress.fromFlatty(TwoFifty)
 
 proc initRound*(bidder = "", wager = 120, partners: seq[string] = @[], bidderWon = false): Round =
   result.bidder = bidder
@@ -34,5 +33,5 @@ proc pointsWon*(round: Round, player: string): int =
     elif player notin round.partners: multiplier = 1
   return multiplier * round.wager
 
-proc save*(twoFifty: TwoFifty): TwoFiftySave =
-  TwoFiftySave(twoFifty.toFlatty().compress.encode)
+proc save*(twoFifty: TwoFifty): string =
+  twoFifty.toFlatty().compress.encode

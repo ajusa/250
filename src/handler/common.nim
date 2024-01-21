@@ -14,17 +14,17 @@ proc cookies*(request: Request): StringTableRef =
   request.headers["Cookie"].parseCookies
 
 proc parseSeq*(params: QueryParams, key: string): seq[string] =
-  for (k, v) in params: 
+  for (k, v) in params:
     if k == key: result.add(v)
 
 proc cookie(twoFifty: TwoFifty): string =
-  setCookie("game", string(twoFifty.save()), path = "/", noName = true)
+  setCookie("game", twoFifty.save(), path = "/", noName = true)
 
 proc updateAndRedirect*(request: Request, twoFifty: TwoFifty) =
   request.respond(303, @[("Set-Cookie", twoFifty.cookie), ("Location", route.game.link)])
 
 proc twoFifty*(request: Request): TwoFifty =
-  request.cookies["game"].TwoFiftySave.initTwoFifty()
+  request.cookies["game"].initTwoFifty()
 
 template page*(inner): untyped = render:
   say "<!DOCTYPE html>"

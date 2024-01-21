@@ -5,15 +5,13 @@ proc gameForm() =
     vScope "{players: 5}"
     label: say "Number of players"
     select:
-      vModel "players"
-      name "num"
+      vModel "number", "players"
       option: say "5"
       option: say "7"
-    for i in 1..7:
-      tdiv:
-        if i == 6 or i == 7: vIf "Number(players) == 7"
-        label: say &"Player {i}"
-        input: ttype "text"; name "players"; required ""; placeholder "Player name"
+    tdiv:
+      vFor "i in players"
+      label: say "Player {{i}}"
+      input: ttype "text"; name "players"; required ""; placeholder "Player name"
 
 proc newGameHandler*(request: Request) =
   let resp = page:
@@ -42,15 +40,15 @@ proc showGameHandler*(request: Request) =
         th: say "Round"
         for player in twoFifty.players: th: say player
       tbody:
-        for i, round in twoFifty.rounds: 
+        for i, round in twoFifty.rounds:
           tr:
-            td: 
+            td:
               a: href route.rounds.link({"id": $i}); say &"Round {i + 1}"
-            for player in twoFifty.players: 
+            for player in twoFifty.players:
               td: say round.pointsWon(player)
         tr:
           td: say "Sum"
-          for player in twoFifty.players: 
+          for player in twoFifty.players:
             var total = 0
             for round in twoFifty.rounds:
               total += round.pointsWon(player)
