@@ -1,18 +1,15 @@
-import mummy, mummy/routers, webby, flatty, supersnappy, dekao, dekao/[vue, htmx]
+import mummy, mummy/routers, webby, flatty, supersnappy, dekao, dekao/[vue, htmx], jsony
 import std/[strformat, strtabs, cookies, base64]
 
-proc parseHook(params: QueryParams, name: string, v: var int) = v = parseInt(params[name])
-proc parseHook(params: QueryParams, name: string, v: var string) = v = params[name]
-proc parseHook(params: QueryParams, name: string, v: var bool) = v = name in params
-proc parseHook[T](params: QueryParams, name: string, v: var seq[T]) =
-  for i, (k, _) in params:
-    if k == name:
-      var val: T
-      when compiles(params.toBase[i .. ^1].QueryParams.fromQuery(name, val)):
-        params.toBase[i .. ^1].QueryParams.fromQuery(name, val)
-      v.add(val)
-proc fromQuery[T](params: QueryParams, objType: typedesc[T]): T =
-  for fieldName, value in result.fieldPairs: parseHook(params, fieldName, value)
+proc parseHook*(s: string, i: var int, v: var int) =
+  var str: string
+  parseHook(s, i, str)
+  v = parseInt(str)
+
+proc parseHook*(s: string, i: var int, v: var bool) =
+  var str: string
+  parseHook(s, i, str)
+  v = true
 
 proc respondHtml*(request: Request, value: string) =
   request.respond(200, @[("Content-Type", "text/html")], value)
@@ -58,10 +55,11 @@ template page(inner): untyped = render:
       meta: charset "utf-8"; name "viewport"; content "width=device-width, initial-scale=1"
       link: rel "stylesheet"; href "https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css"
       script: src "https://unpkg.com/htmx.org@1.9.2/dist/htmx.js"
+      script: src "https://unpkg.com/htmx.org/dist/ext/json-enc.js"
       script: src "https://unpkg.com/petite-vue"; tDefer(); init()
       title: say "250"
     body:
-      hxBoost "true"; hxTarget "body"; hxPushUrl "true"
+      hxBoost "true"; hxTarget "body"; hxPushUrl "true"; hxExt "json-enc"
       main ".container":
         h1: say "250 Score Tracker"
         inner
@@ -87,12 +85,12 @@ proc form*(round: Round, players: seq[string], id: int) =
       say "Did the bidder win?"
 
 proc createRoundHandler(request: Request, twoFifty: var TwoFifty) =
-  twoFifty.rounds.add(request.body.parseSearch.fromQuery(Round))
+  twoFifty.rounds.add(request.body.fromJson(Round))
   request.updateAndRedirect(twoFifty)
 
 proc updateRoundHandler(request: Request, twoFifty: var TwoFifty) =
   let id = request.pathParams["id"].parseInt
-  twoFifty.rounds[id] = request.body.parseSearch.fromQuery(Round)
+  twoFifty.rounds[id] = request.body.fromJson(Round)
   request.updateAndRedirect(twoFifty)
 
 proc deleteRoundHandler(request: Request, twoFifty: var TwoFifty) =
@@ -132,7 +130,7 @@ proc newGameHandler*(request: Request) =
   request.respondHtml(resp)
 
 proc createGameHandler(request: Request) =
-  request.updateAndRedirect(request.body.parseSearch.fromQuery(TwoFifty))
+  request.updateAndRedirect(request.body.fromJson(TwoFifty))
 
 proc showGameHandler(request: Request, twoFifty: var TwoFifty) =
   let resp = page:
@@ -150,8 +148,7 @@ proc showGameHandler(request: Request, twoFifty: var TwoFifty) =
         for i, round in twoFifty.rounds:
           tr:
             td: a: href link "/game/rounds/" & $i; say &"Round {i + 1}"
-            for player in twoFifty.players:
-              td: say round.pointsWon(player)
+            for player in twoFifty.players: td: say round.pointsWon(player)
         tr:
           td: say "Sum"
           for player in twoFifty.players:
