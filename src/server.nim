@@ -1,4 +1,4 @@
-import mummy, mummy/routers, webby, flatty, supersnappy, dekao, dekao/[vue, htmx], jsony
+import mummy, mummy/routers, webby, flatty, supersnappy, dekao, dekao/htmx, jsony
 import std/[strformat, strtabs, cookies, base64]
 
 proc parseHook*(s: string, i: var int, v: var int) =
@@ -15,8 +15,8 @@ proc respondHtml*(request: Request, value: string) =
   request.respond(200, @[("Content-Type", "text/html")], value)
 proc cookies(request: Request): StringTableRef = request.headers["Cookie"].parseCookies
 
-const BASE = when defined(release): "/250" else: ""
-proc link(url: string): string = BASE & url
+proc link(url: string): string =
+  when defined(release): "250" & url else: url
 
 type
   Round = object
@@ -56,7 +56,6 @@ template page(inner): untyped = render:
       link: rel "stylesheet"; href "https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css"
       script: src "https://unpkg.com/htmx.org@1.9.2/dist/htmx.js"
       script: src "https://unpkg.com/htmx.org/dist/ext/json-enc.js"
-      script: src "https://unpkg.com/petite-vue"; tDefer(); init()
       title: say "250"
     body:
       hxBoost "true"; hxTarget "body"; hxPushUrl "true"; hxExt "json-enc"
@@ -64,24 +63,24 @@ template page(inner): untyped = render:
         h1: say "250 Score Tracker"
         inner
 
-proc form*(round: Round, players: seq[string], id: int) =
+proc form(round: Round, players: seq[string], id: int) =
   article:
-    h4: say &"Round {id + 1}"
+    h4: say &"Round {id+1}"
     label: say "Bidder"
     select:
       name "bidder"
-      for player in players: option: (if player == round.bidder: selected ""); say player
+      for player in players: option: selected player == round.bidder; say player
     label: say "Points wagered"
     input: ttype "number"; name "wager"; value $round.wager; step "5"; min "120"; max "250"
     for i, partner in round.partners:
-      label: say &"Partner {i + 1}"
+      label: say &"Partner {i+1}"
       select:
         name "partners"
         if i >= 1: option: value ""; say "None"
         for player in players:
-          option: (if player == partner: selected ""); say player
+          option: selected player == partner; say player
     fieldset: label:
-      input: ttype "checkbox"; name "bidderWon"; (if round.bidderWon: checked "")
+      input: ttype "checkbox"; name "bidderWon"; checked round.bidderWon
       say "Did the bidder win?"
 
 proc createRoundHandler(request: Request, twoFifty: var TwoFifty) =
@@ -103,28 +102,27 @@ proc editRoundHandler*(request: Request, twoFifty: var TwoFifty) =
     p: a ".secondary": href link "/game"; role "button"; say "Go back to game"
     h3: say "Update round"
     form:
-      hxPut link "/game/rounds/" & $id
+      hxPut link &"/game/rounds/{id}"
       twoFifty.rounds[id].form(twoFifty.players, id)
       button: ttype "submit"; say "Save round"
-    button ".secondary": hxDelete link "/game/rounds/" & $id; say "Delete round"
+    button ".secondary": hxDelete link &"/game/rounds/{id}"; say "Delete round"
   request.respondHtml(resp)
 
 proc newGameHandler*(request: Request) =
+  let playerCount = request.queryParams.getOrDefault("number", "5").parseInt()
   let resp = page:
     if "game" in request.cookies:
-      p: a ".secondary": href link "/game"; role "button"; say "Resume last game"
+      p: a ".secondary": href link("/game"); role "button"; say "Resume last game"
     form:
       hxPost link "/game"
-      tdiv:
-        vScope "{players: 5}"
-        label: say "Number of players"
-        select:
-          vModel "number", "players"
-          option: say "5"
-          option: say "7"
-        tdiv:
-          vFor "i in players"
-          label: say "Player {{i}}"
+      label: say "Number of players"
+      select:
+        name "number"; hxSelect "#players"; hxTarget "#players"; hxSwap "outerHTML"; hxGet "."
+        option: say "5"
+        option: say "7"
+      tdiv("#players"):
+        for i in 1..playerCount:
+          label: say &"Player {i}"
           input: ttype "text"; name "players"; required ""; placeholder "Player name"
       button: ttype "submit"; say "Start game"
   request.respondHtml(resp)
@@ -147,8 +145,9 @@ proc showGameHandler(request: Request, twoFifty: var TwoFifty) =
       tbody:
         for i, round in twoFifty.rounds:
           tr:
-            td: a: href link "/game/rounds/" & $i; say &"Round {i + 1}"
-            for player in twoFifty.players: td: say round.pointsWon(player)
+            td: a: href link &"/game/rounds/{i}"; say &"Round {i+1}"
+            for player in twoFifty.players:
+              td: say round.pointsWon(player)
         tr:
           td: say "Sum"
           for player in twoFifty.players:
