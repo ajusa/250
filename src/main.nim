@@ -16,7 +16,7 @@ proc respondHtml*(request: Request, value: string) =
 proc cookies(request: Request): StringTableRef = request.headers["Cookie"].parseCookies
 
 proc link(url: string): string =
-  when defined(release): "250" & url else: url
+  when defined(release): "/250" & url else: url
 
 type
   Round = object
@@ -53,7 +53,7 @@ template page(inner): untyped = render:
   html:
     head:
       meta: charset "utf-8"; name "viewport"; content "width=device-width, initial-scale=1"
-      link: rel "stylesheet"; href "https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css"
+      link: rel "stylesheet"; href "https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
       script: src "https://unpkg.com/htmx.org@1.9.2/dist/htmx.js"
       script: src "https://unpkg.com/htmx.org/dist/ext/json-enc.js"
       title: say "250"
@@ -138,7 +138,6 @@ proc showGameHandler(request: Request, twoFifty: var TwoFifty) =
       button: ttype "submit"; say "Add round"
     h4: say "Results"
     table:
-      role "grid"
       thead: tr:
         th: say "Round"
         for player in twoFifty.players: th: say player
@@ -148,13 +147,13 @@ proc showGameHandler(request: Request, twoFifty: var TwoFifty) =
             td: a: href link &"/game/rounds/{i}"; say &"Round {i+1}"
             for player in twoFifty.players:
               td: say round.pointsWon(player)
-        tr:
-          td: say "Sum"
-          for player in twoFifty.players:
-            var total = 0
-            for round in twoFifty.rounds:
-              total += round.pointsWon(player)
-            td: say total
+      tfoot: tr:
+        td: say "Sum"
+        for player in twoFifty.players:
+          var total = 0
+          for round in twoFifty.rounds:
+            total += round.pointsWon(player)
+          td: say total
     a ".secondary": href link "/"; role "button"; say "Start a new game"
   request.respondHtml(resp)
 
