@@ -53,8 +53,7 @@ proc gameHeaders(game: TwoFifty): HttpHeaders =
 include "index.html"
 
 proc route(request: Request): (int, HttpHeaders, string) {.gcsafe.} =
-  var params = request.body.parseSearch
-  params &= request.queryParams
+  let params = QueryParams(request.body.parseSearch & request.queryParams)
   let isPost = request.httpMethod == "POST"
   let action = params["action"]
   let count = try: params["number"].parseInt except: 5
