@@ -41,7 +41,7 @@
 
 #proc form(round: Round, players: seq[string]): string =
 <div class="row">
-  <div class="col-4">
+  <div class="col-6">
     <label data-field>
       Bidder
       <select name="bidder">
@@ -52,25 +52,23 @@
     </label>
   </div>
 
-  <div class="col-4">
+  <div class="col-6">
     <label data-field>
       Wager
       <input type="number" name="wager" value="$round.wager" step="5" min="120" max="250" />
     </label>
   </div>
-
-  <div class="col-4">
-    <fieldset class="vstack">
-      <legend>Partners</legend>
-      #for player in players:
-      <label>
-        <input type="checkbox" name="partners" value="$player" ${checked player in round.partners} />
-        $player
-      </label>
-      #end
-    </fieldset>
-  </div>
 </div>
+
+<fieldset class="vstack">
+  <legend>Partners</legend>
+  #for player in players:
+  <label>
+    <input type="checkbox" name="partners" value="$player" ${checked player in round.partners} />
+    $player
+  </label>
+  #end
+</fieldset>
 
 <div class="mt-4">
   <label>
@@ -194,8 +192,8 @@
         --success-foreground: light-dark(#faf4ed, #191724);
         --warning: light-dark(#ea9d34, #f6c177);
         --warning-foreground: light-dark(#575279, #191724);
-        --border: light-dark(#f2e9e1, #26233a);
-        --input: light-dark(#f2e9e1, #26233a);
+        --border: light-dark(#dfdad9, #44415a);
+        --input: light-dark(#dfdad9, #44415a);
         --ring: light-dark(#907aa9, #c4a7e7);
 
         --container-max: 768px;
