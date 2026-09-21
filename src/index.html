@@ -1,0 +1,227 @@
+#? stdtmpl
+# var result = ""
+
+#proc newGame(): string =
+#if hasGame():
+<p class="mb-6">
+  <a href="/game" class="button outline">← Resume Game</a>
+</p>
+#end
+<h2>New Game</h2>
+<p class="text-light mb-6">Add everyone playing, then start scoring rounds.</p>
+
+<form action="/create-game" method="post">
+  <div class="row">
+    <div class="col-4">
+      <label data-field>
+        Number of players
+        <select name="number" up-keep>
+          <option>5</option>
+          <option>7</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  #let count = params().getOrDefault("number", "5").parseInt
+  <div class="row">
+    #for i in 1..count:
+    <div class="col-6">
+      <label data-field>
+        Player $i
+        <input type="text" name="players" id="players$i" required placeholder="Player $i" up-keep />
+      </label>
+    </div>
+    #end
+  </div>
+
+  <button type="submit" class="mt-6">Start Game</button>
+</form>
+#end
+
+#proc form(round: Round, players: seq[string]): string =
+<div class="row">
+  <div class="col-4">
+    <label data-field>
+      Bidder
+      <select name="bidder">
+        #for player in players:
+        <option value="$player" ${selected(round.bidder == player)}>$player</option>
+        #end
+      </select>
+    </label>
+  </div>
+
+  <div class="col-4">
+    <label data-field>
+      Wager
+      <input type="number" name="wager" value="$round.wager" step="5" min="120" max="250" />
+    </label>
+  </div>
+
+  <div class="col-4">
+    <fieldset class="vstack">
+      <legend>Partners</legend>
+      #for player in players:
+      <label>
+        <input type="checkbox" name="partners" value="$player" ${checked player in round.partners} />
+        $player
+      </label>
+      #end
+    </fieldset>
+  </div>
+</div>
+
+<div class="mt-4">
+  <label>
+    <input type="checkbox" role="switch" name="bidderWon" ${checked(round.bidderWon)} />
+    Bidders won
+  </label>
+</div>
+#end
+
+#proc editRound(id: int, twoFifty: TwoFifty): string =
+<p class="mb-6">
+  <a href="/game" class="button ghost">← Back</a>
+</p>
+
+<h2 class="mb-6">Edit Round ${id + 1}</h2>
+
+<form action="/game/rounds/$id/update" method="post">
+  #let round = twoFifty.rounds[id]
+  ${form(round, twoFifty.players)}
+
+  <div class="hstack mt-6">
+    <button type="submit">Save</button>
+    <a href="/game" class="button ghost">Cancel</a>
+    <button type="button" commandfor="delete-dialog" command="show-modal" class="ghost" data-variant="danger">Delete</button>
+  </div>
+</form>
+
+<dialog id="delete-dialog" closedby="any">
+  <form action="/game/rounds/$id/delete" method="post">
+    <header>
+      <h3>Delete Round ${id + 1}?</h3>
+      <p>This action cannot be undone.</p>
+    </header>
+    <footer>
+      <button type="button" commandfor="delete-dialog" command="close" class="outline">Cancel</button>
+      <button type="submit" data-variant="danger">Delete</button>
+    </footer>
+  </form>
+</dialog>
+#end
+
+#proc showGame(twoFifty: var TwoFifty): string =
+<h2>Round ${twoFifty.rounds.len + 1}</h2>
+<p class="text-light mb-6">Record the bidder, wager, partners and outcome.</p>
+
+<form action="/game/rounds" method="post">
+  ${form(Round(partners: @["", ""], wager: 120), twoFifty.players)}
+  <button type="submit" class="mt-6">Add Round</button>
+</form>
+
+<div class="hstack justify-between mt-8 mb-4">
+  <h2>Scoreboard</h2>
+  <a href="/" class="button ghost small">New Game</a>
+</div>
+
+#if twoFifty.rounds.len == 0:
+<div role="alert">No rounds yet — add the first round above.</div>
+#else:
+<div class="table">
+  <table>
+    <thead>
+      <tr>
+        <th>Round</th>
+        #for player in twoFifty.players:
+        <th>$player</th>
+        #end
+      </tr>
+    </thead>
+    <tbody>
+      #for i, round in twoFifty.rounds:
+      <tr>
+        <td><a href="/game/rounds/$i">${i + 1}</a></td>
+        #for player in twoFifty.players:
+        <td>${round.pointsWon(player)}</td>
+        #end
+      </tr>
+      #end
+    </tbody>
+    <tfoot>
+      <tr>
+        <th>Total</th>
+        #for player in twoFifty.players:
+        <th>${twoFifty.totalPointsWon(player)}</th>
+        #end
+      </tr>
+    </tfoot>
+  </table>
+</div>
+#end
+#end
+
+#proc render(content: string): string =
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <style>
+      :root {
+        color-scheme: light dark;
+
+        /* Rose Pine Dawn (light) / Rose Pine (dark), via arhamjain.com */
+        --background: light-dark(#fffaf3, #191724);
+        --foreground: light-dark(#575279, #e0def4);
+        --card: light-dark(#faf4ed, #1f1d2e);
+        --card-foreground: light-dark(#575279, #e0def4);
+        --primary: light-dark(#907aa9, #c4a7e7);
+        --primary-foreground: light-dark(#faf4ed, #191724);
+        --secondary: light-dark(#f2e9e1, #26233a);
+        --secondary-foreground: light-dark(#575279, #e0def4);
+        --muted: light-dark(#f2e9e1, #26233a);
+        --muted-foreground: light-dark(#797593, #908caa);
+        --faint: light-dark(#faf4ed, #1f1d2e);
+        --faint-foreground: light-dark(#9893a5, #6e6a86);
+        --accent: light-dark(#f2e9e1, #26233a);
+        --danger: light-dark(#b4637a, #eb6f92);
+        --danger-foreground: light-dark(#faf4ed, #191724);
+        --success: light-dark(#56949f, #9ccfd8);
+        --success-foreground: light-dark(#faf4ed, #191724);
+        --warning: light-dark(#ea9d34, #f6c177);
+        --warning-foreground: light-dark(#575279, #191724);
+        --border: light-dark(#f2e9e1, #26233a);
+        --input: light-dark(#f2e9e1, #26233a);
+        --ring: light-dark(#907aa9, #c4a7e7);
+
+        --container-max: 768px;
+        --container-pad: 1.5rem;
+        --leading-normal: 1.5;
+
+        --font-sans: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        --font-mono: ui-monospace, "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/unpoly@3.10.2/unpoly.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/unpoly@3.10.2/unpoly.min.css" />
+    <title>250</title>
+    <script>
+      up.form.config.submitSelectors.push(['form']);
+      up.link.config.followSelectors.push('a[href]');
+    </script>
+  </head>
+  <body>
+    <nav data-topnav>
+      <a href="/" class="unstyled"><strong>250</strong></a>
+    </nav>
+    <main>
+      <div class="container mt-8 mb-8">
+        $content
+      </div>
+    </main>
+  </body>
+</html>
