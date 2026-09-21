@@ -1,6 +1,5 @@
-import flatty, supersnappy
-import std/[strutils, base64]
-import ../../rody/src/rody
+import mummy, webby, flatty, supersnappy
+import std/[strutils, strtabs, base64, cookies]
 
 type
   Round* = object
@@ -25,12 +24,6 @@ proc pointsWon*(round: Round, player: string): int =
 proc totalPointsWon*(twoFifty: TwoFifty, player: string): int =
   for round in twoFifty.rounds: result += round.pointsWon(player)
 
-proc hasGame(): bool = request.cookies("game").len > 0
-
-proc updateAndRedirect(twoFifty: TwoFifty) =
-  rody.setCookie("game", twoFifty.toFlatty().compress.encode)
-  redirect("/game")
-
 proc selected(e: bool): string =
   if e: "selected" else: ""
 proc checked(e: bool): string =
@@ -44,46 +37,66 @@ proc toRound(params: QueryParams): Round =
   for (k, v) in params:
     case k
     of "bidder": result.bidder = v
-    of "wager": 
+    of "wager":
       try: result.wager = v.parseInt
       except ValueError: discard
     of "partners": result.partners.add(v)
     of "bidderWon": result.bidderWon = true
 
+const htmlHeaders: HttpHeaders = @[("Content-Type", "text/html; charset=utf-8")]
+
+proc gameHeaders(game: TwoFifty): HttpHeaders =
+  result = htmlHeaders
+  result["Location"] = "/?action=game"
+  result["Set-Cookie"] = "game=" & game.toFlatty.compress.encode & "; Path=/"
+
 include "index.html"
 
-let handler = route:
-  at "/":
-    get: resp render(newGame())
-  at "/create-game":
-    post:
-      if "X-Up-Validate" in request.headers:
-        resp render(newGame())
-      else:
-        updateAndRedirect(params().toTwoFifty)
-  at "/game":
-    var twoFifty = request.cookies("game").decode.uncompress.fromFlatty(TwoFifty)
-    get:
-      resp render(showGame(twoFifty))
-    at "/rounds":
-      post:
-        twoFifty.rounds.add(params().toRound)
-        updateAndRedirect(twoFifty)
-      at(int):
-        let id = it
-        get:
-          if id >= 0 and id < twoFifty.rounds.len:
-            resp render(editRound(id, twoFifty))
-          else:
-            redirect "/game"
-        at "/update": post:
-          twoFifty.rounds[id] = params().toRound
-          updateAndRedirect(twoFifty)
-        at "/delete": post:
-          twoFifty.rounds.delete(id)
-          updateAndRedirect(twoFifty)
+proc route(request: Request): (int, HttpHeaders, string) {.gcsafe.} =
+  var params = request.body.parseSearch
+  params &= request.queryParams
+  let isPost = request.httpMethod == "POST"
+  let action = params["action"]
+  let count = try: params["number"].parseInt except: 5
+  let resume = request.headers["Cookie"].len > 0
+
+  if request.path != "/": return (404, htmlHeaders, "Not found")
+
+  if not isPost and action == "":
+    return (200, htmlHeaders, render(newGame(count, resume)))
+
+  if isPost and action == "create":
+    if "X-Up-Validate" in request.headers:
+      return (200, htmlHeaders, render(newGame(count, resume)))
+    return (302, gameHeaders(params.toTwoFifty), "")
+
+  var game = request.headers["Cookie"].parseCookies["game"].decode.uncompress.fromFlatty(TwoFifty)
+  let id = try: params["id"].parseInt except: -1
+
+  if not isPost and action == "game":
+    return (200, htmlHeaders, render(showGame(game)))
+
+  if isPost and action == "add":
+    game.rounds.add(params.toRound)
+    return (302, gameHeaders(game), "")
+
+  if not isPost and action == "edit":
+    return (200, htmlHeaders, render(editRound(id, game)))
+
+  if isPost and action == "update":
+    game.rounds[id] = params.toRound
+    return (302, gameHeaders(game), "")
+
+  if isPost and action == "delete":
+    game.rounds.delete(id)
+    return (302, gameHeaders(game), "")
+
+  return (404, htmlHeaders, "Not found")
+
+proc handle(request: Request) {.gcsafe.} =
+  let (code, headers, body) = route(request)
+  request.respond(code, headers, body)
 
 when isMainModule:
-  let server = newServer(handler)
   echo "Serving on http://localhost:8080"
-  server.serve(Port(8080))
+  newServer(handle).serve(Port(8080))

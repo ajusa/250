@@ -1,16 +1,16 @@
 #? stdtmpl
 # var result = ""
 
-#proc newGame(): string =
-#if hasGame():
+#proc newGame(count: int, resume: bool): string =
+#if resume:
 <p class="mb-6">
-  <a href="/game" class="button outline">← Resume Game</a>
+  <a href="/?action=game" class="button outline">← Resume Game</a>
 </p>
 #end
 <h2>New Game</h2>
 <p class="text-light mb-6">Add everyone playing, then start scoring rounds.</p>
 
-<form action="/create-game" method="post">
+<form action="/?action=create" method="post">
   <div class="row">
     <div class="col-4">
       <label data-field>
@@ -23,7 +23,6 @@
     </div>
   </div>
 
-  #let count = params().getOrDefault("number", "5").parseInt
   <div class="row">
     #for i in 1..count:
     <div class="col-6">
@@ -80,24 +79,24 @@
 
 #proc editRound(id: int, twoFifty: TwoFifty): string =
 <p class="mb-6">
-  <a href="/game" class="button ghost">← Back</a>
+  <a href="/?action=game" class="button ghost">← Back</a>
 </p>
 
 <h2 class="mb-6">Edit Round ${id + 1}</h2>
 
-<form action="/game/rounds/$id/update" method="post">
+<form action="/?action=update&id=$id" method="post">
   #let round = twoFifty.rounds[id]
   ${form(round, twoFifty.players)}
 
   <div class="hstack mt-6">
     <button type="submit">Save</button>
-    <a href="/game" class="button ghost">Cancel</a>
+    <a href="/?action=game" class="button ghost">Cancel</a>
     <button type="button" commandfor="delete-dialog" command="show-modal" class="ghost" data-variant="danger">Delete</button>
   </div>
 </form>
 
 <dialog id="delete-dialog" closedby="any">
-  <form action="/game/rounds/$id/delete" method="post">
+  <form action="/?action=delete&id=$id" method="post">
     <header>
       <h3>Delete Round ${id + 1}?</h3>
       <p>This action cannot be undone.</p>
@@ -114,7 +113,7 @@
 <h2>Round ${twoFifty.rounds.len + 1}</h2>
 <p class="text-light mb-6">Record the bidder, wager, partners and outcome.</p>
 
-<form action="/game/rounds" method="post">
+<form action="/?action=add" method="post">
   ${form(Round(partners: @["", ""], wager: 120), twoFifty.players)}
   <button type="submit" class="mt-6">Add Round</button>
 </form>
@@ -140,7 +139,7 @@
     <tbody>
       #for i, round in twoFifty.rounds:
       <tr>
-        <td><a href="/game/rounds/$i">${i + 1}</a></td>
+        <td><a href="/?action=edit&id=$i">${i + 1}</a></td>
         #for player in twoFifty.players:
         <td>${round.pointsWon(player)}</td>
         #end
